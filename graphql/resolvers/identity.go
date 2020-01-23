@@ -27,10 +27,6 @@ func (identityResolver) Email(ctx context.Context, obj *identity.Interface) (*st
 	return nilIfEmpty((*obj).Email())
 }
 
-func (identityResolver) Login(ctx context.Context, obj *identity.Interface) (*string, error) {
-	return nilIfEmpty((*obj).Login())
-}
-
 func (identityResolver) DisplayName(ctx context.Context, obj *identity.Interface) (string, error) {
 	return (*obj).DisplayName(), nil
 }
