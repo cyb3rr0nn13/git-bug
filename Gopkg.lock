@@ -2,7 +2,7 @@
 
 
 [[projects]]
-  digest = "1:25c825a120e8ae421b807f06eaa30f4d30ad3700fc103b7aaa24af8358498d31"
+  digest = "1:209f576bfb470ef22bf445af7d8929ac8fe3757853335238bc780b49ce49f6a1"
   name = "github.com/99designs/gqlgen"
   packages = [
     "api",
@@ -21,8 +21,8 @@
     "plugin/schemaconfig",
   ]
   pruneopts = "UT"
-  revision = "4eeacc6e4cb7bedc7c5312b6a3947697ad5cfb55"
-  version = "v0.9.2"
+  revision = "f276a4e6773992c572119b22821d375ad008c53d"
+  version = "v0.10.2"
 
 [[projects]]
   digest = "1:364c89f564ef045872f82ff2f156fd3cb09274e4a3bdbf89aef2c2370c955f95"

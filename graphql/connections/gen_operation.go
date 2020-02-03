@@ -7,24 +7,23 @@ package connections
 import (
 	"fmt"
 
-	"github.com/MichaelMure/git-bug/bug"
 	"github.com/MichaelMure/git-bug/graphql/models"
 )
 
-// BugOperationEdgeMaker define a function that take a bug.Operation and an offset and
+// ModelsOperationEdgeMaker define a function that take a models.Operation and an offset and
 // create an Edge.
-type OperationEdgeMaker func(value bug.Operation, offset int) Edge
+type OperationEdgeMaker func(value models.Operation, offset int) Edge
 
 // OperationConMaker define a function that create a models.OperationConnection
 type OperationConMaker func(
 	edges []*models.OperationEdge,
-	nodes []bug.Operation,
+	nodes []models.Operation,
 	info *models.PageInfo,
 	totalCount int) (*models.OperationConnection, error)
 
 // OperationCon will paginate a source according to the input of a relay connection
-func OperationCon(source []bug.Operation, edgeMaker OperationEdgeMaker, conMaker OperationConMaker, input models.ConnectionInput) (*models.OperationConnection, error) {
-	var nodes []bug.Operation
+func OperationCon(source []models.Operation, edgeMaker OperationEdgeMaker, conMaker OperationConMaker, input models.ConnectionInput) (*models.OperationConnection, error) {
+	var nodes []models.Operation
 	var edges []*models.OperationEdge
 	var cursors []string
 	var pageInfo = &models.PageInfo{}

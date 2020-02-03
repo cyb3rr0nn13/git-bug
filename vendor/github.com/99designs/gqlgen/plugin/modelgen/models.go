@@ -7,10 +7,15 @@ import (
 
 	"github.com/99designs/gqlgen/codegen/config"
 	"github.com/99designs/gqlgen/codegen/templates"
-	"github.com/99designs/gqlgen/internal/code"
 	"github.com/99designs/gqlgen/plugin"
 	"github.com/vektah/gqlparser/ast"
 )
+
+type BuildMutateHook = func(b *ModelBuild) *ModelBuild
+
+func defaultBuildMutateHook(b *ModelBuild) *ModelBuild {
+	return b
+}
 
 type ModelBuild struct {
 	PackageName string
@@ -51,10 +56,14 @@ type EnumValue struct {
 }
 
 func New() plugin.Plugin {
-	return &Plugin{}
+	return &Plugin{
+		MutateHook: defaultBuildMutateHook,
+	}
 }
 
-type Plugin struct{}
+type Plugin struct {
+	MutateHook BuildMutateHook
+}
 
 var _ plugin.ConfigMutator = &Plugin{}
 
@@ -119,8 +128,7 @@ func (m *Plugin) MutateConfig(cfg *config.Config) error {
 				fieldDef := schema.Types[field.Type.Name()]
 
 				if cfg.Models.UserDefined(field.Type.Name()) {
-					pkg, typeName := code.PkgAndType(cfg.Models[field.Type.Name()].Model[0])
-					typ, err = binder.FindType(pkg, typeName)
+					typ, err = binder.FindTypeFromName(cfg.Models[field.Type.Name()].Model[0])
 					if err != nil {
 						return err
 					}
@@ -221,6 +229,10 @@ func (m *Plugin) MutateConfig(cfg *config.Config) error {
 
 	if len(b.Models) == 0 && len(b.Enums) == 0 {
 		return nil
+	}
+
+	if m.MutateHook != nil {
+		b = m.MutateHook(b)
 	}
 
 	return templates.Render(templates.Options{

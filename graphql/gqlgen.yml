@@ -9,20 +9,32 @@ models:
     model: github.com/MichaelMure/git-bug/graphql/models.Repository
   RepositoryMutation:
     model: github.com/MichaelMure/git-bug/graphql/models.RepositoryMutation
-  Bug:
-    model: github.com/MichaelMure/git-bug/bug.Snapshot
+#  Bug:
+#    model: github.com/MichaelMure/git-bug/graphql/models.BugWrapper
+#    fields:
+#      actors:
+#        resolver: true
+#      participants:
+#        resolver: true
+#      comments:
+#        resolver: true
+#      timeline:
+#        resolver: true
+#      operations:
+#        resolver: true
   Color:
     model: image/color.RGBA
   Comment:
     model: github.com/MichaelMure/git-bug/bug.Comment
-  Identity:
-    model: github.com/MichaelMure/git-bug/identity.Interface
+#  Identity:
+#    model: github.com/MichaelMure/git-bug/graphql/models.IdentityWrapper
   Label:
     model: github.com/MichaelMure/git-bug/bug.Label
   Hash:
     model: github.com/MichaelMure/git-bug/util/git.Hash
-  Operation:
-    model: github.com/MichaelMure/git-bug/bug.Operation
+#  Operation:
+#    model: github.com/MichaelMure/git-bug/bug.Operation
+#    fields:
   CreateOperation:
     model: github.com/MichaelMure/git-bug/bug.CreateOperation
   SetTitleOperation:

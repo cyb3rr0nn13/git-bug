@@ -17,7 +17,6 @@ import (
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/MichaelMure/git-bug/bug"
 	"github.com/MichaelMure/git-bug/graphql/models"
-	"github.com/MichaelMure/git-bug/identity"
 	"github.com/MichaelMure/git-bug/util/git"
 	"github.com/vektah/gqlparser"
 	"github.com/vektah/gqlparser/ast"
@@ -43,13 +42,12 @@ type Config struct {
 type ResolverRoot interface {
 	AddCommentOperation() AddCommentOperationResolver
 	AddCommentTimelineItem() AddCommentTimelineItemResolver
-	Bug() BugResolver
 	Color() ColorResolver
+	Comment() CommentResolver
 	CommentHistoryStep() CommentHistoryStepResolver
 	CreateOperation() CreateOperationResolver
 	CreateTimelineItem() CreateTimelineItemResolver
 	EditCommentOperation() EditCommentOperationResolver
-	Identity() IdentityResolver
 	Label() LabelResolver
 	LabelChangeOperation() LabelChangeOperationResolver
 	LabelChangeResult() LabelChangeResultResolver
@@ -371,61 +369,44 @@ type ComplexityRoot struct {
 
 type AddCommentOperationResolver interface {
 	ID(ctx context.Context, obj *bug.AddCommentOperation) (string, error)
-
+	Author(ctx context.Context, obj *bug.AddCommentOperation) (*models.Identity, error)
 	Date(ctx context.Context, obj *bug.AddCommentOperation) (*time.Time, error)
 }
 type AddCommentTimelineItemResolver interface {
 	ID(ctx context.Context, obj *bug.AddCommentTimelineItem) (string, error)
+	Author(ctx context.Context, obj *bug.AddCommentTimelineItem) (*models.Identity, error)
 
 	CreatedAt(ctx context.Context, obj *bug.AddCommentTimelineItem) (*time.Time, error)
 	LastEdit(ctx context.Context, obj *bug.AddCommentTimelineItem) (*time.Time, error)
-}
-type BugResolver interface {
-	ID(ctx context.Context, obj *bug.Snapshot) (string, error)
-	HumanID(ctx context.Context, obj *bug.Snapshot) (string, error)
-	Status(ctx context.Context, obj *bug.Snapshot) (models.Status, error)
-
-	LastEdit(ctx context.Context, obj *bug.Snapshot) (*time.Time, error)
-	Actors(ctx context.Context, obj *bug.Snapshot, after *string, before *string, first *int, last *int) (*models.IdentityConnection, error)
-	Participants(ctx context.Context, obj *bug.Snapshot, after *string, before *string, first *int, last *int) (*models.IdentityConnection, error)
-	Comments(ctx context.Context, obj *bug.Snapshot, after *string, before *string, first *int, last *int) (*models.CommentConnection, error)
-	Timeline(ctx context.Context, obj *bug.Snapshot, after *string, before *string, first *int, last *int) (*models.TimelineItemConnection, error)
-	Operations(ctx context.Context, obj *bug.Snapshot, after *string, before *string, first *int, last *int) (*models.OperationConnection, error)
 }
 type ColorResolver interface {
 	R(ctx context.Context, obj *color.RGBA) (int, error)
 	G(ctx context.Context, obj *color.RGBA) (int, error)
 	B(ctx context.Context, obj *color.RGBA) (int, error)
 }
+type CommentResolver interface {
+	Author(ctx context.Context, obj *bug.Comment) (*models.Identity, error)
+}
 type CommentHistoryStepResolver interface {
 	Date(ctx context.Context, obj *bug.CommentHistoryStep) (*time.Time, error)
 }
 type CreateOperationResolver interface {
 	ID(ctx context.Context, obj *bug.CreateOperation) (string, error)
-
+	Author(ctx context.Context, obj *bug.CreateOperation) (*models.Identity, error)
 	Date(ctx context.Context, obj *bug.CreateOperation) (*time.Time, error)
 }
 type CreateTimelineItemResolver interface {
 	ID(ctx context.Context, obj *bug.CreateTimelineItem) (string, error)
+	Author(ctx context.Context, obj *bug.CreateTimelineItem) (*models.Identity, error)
 
 	CreatedAt(ctx context.Context, obj *bug.CreateTimelineItem) (*time.Time, error)
 	LastEdit(ctx context.Context, obj *bug.CreateTimelineItem) (*time.Time, error)
 }
 type EditCommentOperationResolver interface {
 	ID(ctx context.Context, obj *bug.EditCommentOperation) (string, error)
-
+	Author(ctx context.Context, obj *bug.EditCommentOperation) (*models.Identity, error)
 	Date(ctx context.Context, obj *bug.EditCommentOperation) (*time.Time, error)
 	Target(ctx context.Context, obj *bug.EditCommentOperation) (string, error)
-}
-type IdentityResolver interface {
-	ID(ctx context.Context, obj *identity.Interface) (string, error)
-	HumanID(ctx context.Context, obj *identity.Interface) (string, error)
-	Name(ctx context.Context, obj *identity.Interface) (*string, error)
-	Email(ctx context.Context, obj *identity.Interface) (*string, error)
-	Login(ctx context.Context, obj *identity.Interface) (*string, error)
-	DisplayName(ctx context.Context, obj *identity.Interface) (string, error)
-	AvatarURL(ctx context.Context, obj *identity.Interface) (*string, error)
-	IsProtected(ctx context.Context, obj *identity.Interface) (bool, error)
 }
 type LabelResolver interface {
 	Name(ctx context.Context, obj *bug.Label) (string, error)
@@ -433,7 +414,7 @@ type LabelResolver interface {
 }
 type LabelChangeOperationResolver interface {
 	ID(ctx context.Context, obj *bug.LabelChangeOperation) (string, error)
-
+	Author(ctx context.Context, obj *bug.LabelChangeOperation) (*models.Identity, error)
 	Date(ctx context.Context, obj *bug.LabelChangeOperation) (*time.Time, error)
 }
 type LabelChangeResultResolver interface {
@@ -441,7 +422,7 @@ type LabelChangeResultResolver interface {
 }
 type LabelChangeTimelineItemResolver interface {
 	ID(ctx context.Context, obj *bug.LabelChangeTimelineItem) (string, error)
-
+	Author(ctx context.Context, obj *bug.LabelChangeTimelineItem) (*models.Identity, error)
 	Date(ctx context.Context, obj *bug.LabelChangeTimelineItem) (*time.Time, error)
 }
 type MutationResolver interface {
@@ -460,32 +441,32 @@ type QueryResolver interface {
 }
 type RepositoryResolver interface {
 	AllBugs(ctx context.Context, obj *models.Repository, after *string, before *string, first *int, last *int, query *string) (*models.BugConnection, error)
-	Bug(ctx context.Context, obj *models.Repository, prefix string) (*bug.Snapshot, error)
+	Bug(ctx context.Context, obj *models.Repository, prefix string) (*models.Bug, error)
 	AllIdentities(ctx context.Context, obj *models.Repository, after *string, before *string, first *int, last *int) (*models.IdentityConnection, error)
-	Identity(ctx context.Context, obj *models.Repository, prefix string) (identity.Interface, error)
-	UserIdentity(ctx context.Context, obj *models.Repository) (identity.Interface, error)
+	Identity(ctx context.Context, obj *models.Repository, prefix string) (*models.Identity, error)
+	UserIdentity(ctx context.Context, obj *models.Repository) (*models.Identity, error)
 	ValidLabels(ctx context.Context, obj *models.Repository, after *string, before *string, first *int, last *int) (*models.LabelConnection, error)
 }
 type SetStatusOperationResolver interface {
 	ID(ctx context.Context, obj *bug.SetStatusOperation) (string, error)
-
+	Author(ctx context.Context, obj *bug.SetStatusOperation) (*models.Identity, error)
 	Date(ctx context.Context, obj *bug.SetStatusOperation) (*time.Time, error)
 	Status(ctx context.Context, obj *bug.SetStatusOperation) (models.Status, error)
 }
 type SetStatusTimelineItemResolver interface {
 	ID(ctx context.Context, obj *bug.SetStatusTimelineItem) (string, error)
-
+	Author(ctx context.Context, obj *bug.SetStatusTimelineItem) (*models.Identity, error)
 	Date(ctx context.Context, obj *bug.SetStatusTimelineItem) (*time.Time, error)
 	Status(ctx context.Context, obj *bug.SetStatusTimelineItem) (models.Status, error)
 }
 type SetTitleOperationResolver interface {
 	ID(ctx context.Context, obj *bug.SetTitleOperation) (string, error)
-
+	Author(ctx context.Context, obj *bug.SetTitleOperation) (*models.Identity, error)
 	Date(ctx context.Context, obj *bug.SetTitleOperation) (*time.Time, error)
 }
 type SetTitleTimelineItemResolver interface {
 	ID(ctx context.Context, obj *bug.SetTitleTimelineItem) (string, error)
-
+	Author(ctx context.Context, obj *bug.SetTitleTimelineItem) (*models.Identity, error)
 	Date(ctx context.Context, obj *bug.SetTitleTimelineItem) (*time.Time, error)
 }
 
@@ -3091,13 +3072,13 @@ func (ec *executionContext) _AddCommentOperation_author(ctx context.Context, fie
 		Object:   "AddCommentOperation",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Author, nil
+		return ec.resolvers.AddCommentOperation().Author(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3109,10 +3090,10 @@ func (ec *executionContext) _AddCommentOperation_author(ctx context.Context, fie
 		}
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AddCommentOperation_date(ctx context.Context, field graphql.CollectedField, obj *bug.AddCommentOperation) (ret graphql.Marshaler) {
@@ -3223,7 +3204,7 @@ func (ec *executionContext) _AddCommentOperation_files(ctx context.Context, fiel
 	res := resTmp.([]git.Hash)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHash(ctx, field.Selections, res)
+	return ec.marshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHashᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AddCommentPayload_clientMutationId(ctx context.Context, field graphql.CollectedField, obj *models.AddCommentPayload) (ret graphql.Marshaler) {
@@ -3291,10 +3272,10 @@ func (ec *executionContext) _AddCommentPayload_bug(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*bug.Snapshot)
+	res := resTmp.(*models.Bug)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx, field.Selections, res)
+	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBug(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AddCommentPayload_operation(ctx context.Context, field graphql.CollectedField, obj *models.AddCommentPayload) (ret graphql.Marshaler) {
@@ -3384,13 +3365,13 @@ func (ec *executionContext) _AddCommentTimelineItem_author(ctx context.Context, 
 		Object:   "AddCommentTimelineItem",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Author, nil
+		return ec.resolvers.AddCommentTimelineItem().Author(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3402,10 +3383,10 @@ func (ec *executionContext) _AddCommentTimelineItem_author(ctx context.Context, 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AddCommentTimelineItem_message(ctx context.Context, field graphql.CollectedField, obj *bug.AddCommentTimelineItem) (ret graphql.Marshaler) {
@@ -3516,7 +3497,7 @@ func (ec *executionContext) _AddCommentTimelineItem_files(ctx context.Context, f
 	res := resTmp.([]git.Hash)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHash(ctx, field.Selections, res)
+	return ec.marshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHashᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AddCommentTimelineItem_createdAt(ctx context.Context, field graphql.CollectedField, obj *bug.AddCommentTimelineItem) (ret graphql.Marshaler) {
@@ -3664,10 +3645,10 @@ func (ec *executionContext) _AddCommentTimelineItem_history(ctx context.Context,
 	res := resTmp.([]bug.CommentHistoryStep)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNCommentHistoryStep2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐCommentHistoryStep(ctx, field.Selections, res)
+	return ec.marshalNCommentHistoryStep2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐCommentHistoryStepᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Bug_id(ctx context.Context, field graphql.CollectedField, obj *bug.Snapshot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Bug_id(ctx context.Context, field graphql.CollectedField, obj *models.Bug) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -3680,13 +3661,13 @@ func (ec *executionContext) _Bug_id(ctx context.Context, field graphql.Collected
 		Object:   "Bug",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Bug().ID(rctx, obj)
+		return obj.ID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3704,7 +3685,7 @@ func (ec *executionContext) _Bug_id(ctx context.Context, field graphql.Collected
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Bug_humanId(ctx context.Context, field graphql.CollectedField, obj *bug.Snapshot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Bug_humanId(ctx context.Context, field graphql.CollectedField, obj *models.Bug) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -3717,13 +3698,13 @@ func (ec *executionContext) _Bug_humanId(ctx context.Context, field graphql.Coll
 		Object:   "Bug",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Bug().HumanID(rctx, obj)
+		return obj.HumanID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3741,7 +3722,7 @@ func (ec *executionContext) _Bug_humanId(ctx context.Context, field graphql.Coll
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Bug_status(ctx context.Context, field graphql.CollectedField, obj *bug.Snapshot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Bug_status(ctx context.Context, field graphql.CollectedField, obj *models.Bug) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -3754,13 +3735,13 @@ func (ec *executionContext) _Bug_status(ctx context.Context, field graphql.Colle
 		Object:   "Bug",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Bug().Status(rctx, obj)
+		return obj.Status, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3778,7 +3759,7 @@ func (ec *executionContext) _Bug_status(ctx context.Context, field graphql.Colle
 	return ec.marshalNStatus2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐStatus(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Bug_title(ctx context.Context, field graphql.CollectedField, obj *bug.Snapshot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Bug_title(ctx context.Context, field graphql.CollectedField, obj *models.Bug) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -3815,7 +3796,7 @@ func (ec *executionContext) _Bug_title(ctx context.Context, field graphql.Collec
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Bug_labels(ctx context.Context, field graphql.CollectedField, obj *bug.Snapshot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Bug_labels(ctx context.Context, field graphql.CollectedField, obj *models.Bug) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -3849,10 +3830,10 @@ func (ec *executionContext) _Bug_labels(ctx context.Context, field graphql.Colle
 	res := resTmp.([]bug.Label)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNLabel2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐLabel(ctx, field.Selections, res)
+	return ec.marshalNLabel2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐLabelᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Bug_author(ctx context.Context, field graphql.CollectedField, obj *bug.Snapshot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Bug_author(ctx context.Context, field graphql.CollectedField, obj *models.Bug) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -3883,13 +3864,13 @@ func (ec *executionContext) _Bug_author(ctx context.Context, field graphql.Colle
 		}
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Bug_createdAt(ctx context.Context, field graphql.CollectedField, obj *bug.Snapshot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Bug_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.Bug) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -3926,7 +3907,7 @@ func (ec *executionContext) _Bug_createdAt(ctx context.Context, field graphql.Co
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Bug_lastEdit(ctx context.Context, field graphql.CollectedField, obj *bug.Snapshot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Bug_lastEdit(ctx context.Context, field graphql.CollectedField, obj *models.Bug) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -3939,13 +3920,13 @@ func (ec *executionContext) _Bug_lastEdit(ctx context.Context, field graphql.Col
 		Object:   "Bug",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Bug().LastEdit(rctx, obj)
+		return obj.LastEdit, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3957,13 +3938,13 @@ func (ec *executionContext) _Bug_lastEdit(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*time.Time)
+	res := resTmp.(time.Time)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Bug_actors(ctx context.Context, field graphql.CollectedField, obj *bug.Snapshot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Bug_actors(ctx context.Context, field graphql.CollectedField, obj *models.Bug) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -3976,7 +3957,7 @@ func (ec *executionContext) _Bug_actors(ctx context.Context, field graphql.Colle
 		Object:   "Bug",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	rawArgs := field.ArgumentMap(ec.Variables)
@@ -3989,7 +3970,7 @@ func (ec *executionContext) _Bug_actors(ctx context.Context, field graphql.Colle
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Bug().Actors(rctx, obj, args["after"].(*string), args["before"].(*string), args["first"].(*int), args["last"].(*int))
+		return obj.Actors, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4007,7 +3988,7 @@ func (ec *executionContext) _Bug_actors(ctx context.Context, field graphql.Colle
 	return ec.marshalNIdentityConnection2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentityConnection(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Bug_participants(ctx context.Context, field graphql.CollectedField, obj *bug.Snapshot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Bug_participants(ctx context.Context, field graphql.CollectedField, obj *models.Bug) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -4020,7 +4001,7 @@ func (ec *executionContext) _Bug_participants(ctx context.Context, field graphql
 		Object:   "Bug",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	rawArgs := field.ArgumentMap(ec.Variables)
@@ -4033,7 +4014,7 @@ func (ec *executionContext) _Bug_participants(ctx context.Context, field graphql
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Bug().Participants(rctx, obj, args["after"].(*string), args["before"].(*string), args["first"].(*int), args["last"].(*int))
+		return obj.Participants, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4051,7 +4032,7 @@ func (ec *executionContext) _Bug_participants(ctx context.Context, field graphql
 	return ec.marshalNIdentityConnection2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentityConnection(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Bug_comments(ctx context.Context, field graphql.CollectedField, obj *bug.Snapshot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Bug_comments(ctx context.Context, field graphql.CollectedField, obj *models.Bug) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -4064,7 +4045,7 @@ func (ec *executionContext) _Bug_comments(ctx context.Context, field graphql.Col
 		Object:   "Bug",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	rawArgs := field.ArgumentMap(ec.Variables)
@@ -4077,7 +4058,7 @@ func (ec *executionContext) _Bug_comments(ctx context.Context, field graphql.Col
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Bug().Comments(rctx, obj, args["after"].(*string), args["before"].(*string), args["first"].(*int), args["last"].(*int))
+		return obj.Comments, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4095,7 +4076,7 @@ func (ec *executionContext) _Bug_comments(ctx context.Context, field graphql.Col
 	return ec.marshalNCommentConnection2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐCommentConnection(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Bug_timeline(ctx context.Context, field graphql.CollectedField, obj *bug.Snapshot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Bug_timeline(ctx context.Context, field graphql.CollectedField, obj *models.Bug) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -4108,7 +4089,7 @@ func (ec *executionContext) _Bug_timeline(ctx context.Context, field graphql.Col
 		Object:   "Bug",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	rawArgs := field.ArgumentMap(ec.Variables)
@@ -4121,7 +4102,7 @@ func (ec *executionContext) _Bug_timeline(ctx context.Context, field graphql.Col
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Bug().Timeline(rctx, obj, args["after"].(*string), args["before"].(*string), args["first"].(*int), args["last"].(*int))
+		return obj.Timeline, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4139,7 +4120,7 @@ func (ec *executionContext) _Bug_timeline(ctx context.Context, field graphql.Col
 	return ec.marshalNTimelineItemConnection2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐTimelineItemConnection(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Bug_operations(ctx context.Context, field graphql.CollectedField, obj *bug.Snapshot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Bug_operations(ctx context.Context, field graphql.CollectedField, obj *models.Bug) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -4152,7 +4133,7 @@ func (ec *executionContext) _Bug_operations(ctx context.Context, field graphql.C
 		Object:   "Bug",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	rawArgs := field.ArgumentMap(ec.Variables)
@@ -4165,7 +4146,7 @@ func (ec *executionContext) _Bug_operations(ctx context.Context, field graphql.C
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Bug().Operations(rctx, obj, args["after"].(*string), args["before"].(*string), args["first"].(*int), args["last"].(*int))
+		return obj.Operations, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4217,7 +4198,7 @@ func (ec *executionContext) _BugConnection_edges(ctx context.Context, field grap
 	res := resTmp.([]*models.BugEdge)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNBugEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBugEdge(ctx, field.Selections, res)
+	return ec.marshalNBugEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBugEdgeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _BugConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *models.BugConnection) (ret graphql.Marshaler) {
@@ -4251,10 +4232,10 @@ func (ec *executionContext) _BugConnection_nodes(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*bug.Snapshot)
+	res := resTmp.([]*models.Bug)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNBug2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx, field.Selections, res)
+	return ec.marshalNBug2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBugᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _BugConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *models.BugConnection) (ret graphql.Marshaler) {
@@ -4399,10 +4380,10 @@ func (ec *executionContext) _BugEdge_node(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*bug.Snapshot)
+	res := resTmp.(*models.Bug)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx, field.Selections, res)
+	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBug(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ChangeLabelPayload_clientMutationId(ctx context.Context, field graphql.CollectedField, obj *models.ChangeLabelPayload) (ret graphql.Marshaler) {
@@ -4470,10 +4451,10 @@ func (ec *executionContext) _ChangeLabelPayload_bug(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*bug.Snapshot)
+	res := resTmp.(*models.Bug)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx, field.Selections, res)
+	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBug(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ChangeLabelPayload_operation(ctx context.Context, field graphql.CollectedField, obj *models.ChangeLabelPayload) (ret graphql.Marshaler) {
@@ -4615,10 +4596,10 @@ func (ec *executionContext) _CloseBugPayload_bug(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*bug.Snapshot)
+	res := resTmp.(*models.Bug)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx, field.Selections, res)
+	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBug(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CloseBugPayload_operation(ctx context.Context, field graphql.CollectedField, obj *models.CloseBugPayload) (ret graphql.Marshaler) {
@@ -4782,13 +4763,13 @@ func (ec *executionContext) _Comment_author(ctx context.Context, field graphql.C
 		Object:   "Comment",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Author, nil
+		return ec.resolvers.Comment().Author(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4800,10 +4781,10 @@ func (ec *executionContext) _Comment_author(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Comment_message(ctx context.Context, field graphql.CollectedField, obj *bug.Comment) (ret graphql.Marshaler) {
@@ -4877,7 +4858,7 @@ func (ec *executionContext) _Comment_files(ctx context.Context, field graphql.Co
 	res := resTmp.([]git.Hash)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHash(ctx, field.Selections, res)
+	return ec.marshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHashᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CommentConnection_edges(ctx context.Context, field graphql.CollectedField, obj *models.CommentConnection) (ret graphql.Marshaler) {
@@ -4914,7 +4895,7 @@ func (ec *executionContext) _CommentConnection_edges(ctx context.Context, field 
 	res := resTmp.([]*models.CommentEdge)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNCommentEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐCommentEdge(ctx, field.Selections, res)
+	return ec.marshalNCommentEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐCommentEdgeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CommentConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *models.CommentConnection) (ret graphql.Marshaler) {
@@ -4951,7 +4932,7 @@ func (ec *executionContext) _CommentConnection_nodes(ctx context.Context, field 
 	res := resTmp.([]*bug.Comment)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNComment2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐComment(ctx, field.Selections, res)
+	return ec.marshalNComment2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐCommentᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CommentConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *models.CommentConnection) (ret graphql.Marshaler) {
@@ -5241,10 +5222,10 @@ func (ec *executionContext) _CommitAsNeededPayload_bug(ctx context.Context, fiel
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*bug.Snapshot)
+	res := resTmp.(*models.Bug)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx, field.Selections, res)
+	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBug(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CommitPayload_clientMutationId(ctx context.Context, field graphql.CollectedField, obj *models.CommitPayload) (ret graphql.Marshaler) {
@@ -5312,10 +5293,10 @@ func (ec *executionContext) _CommitPayload_bug(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*bug.Snapshot)
+	res := resTmp.(*models.Bug)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx, field.Selections, res)
+	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBug(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CreateOperation_id(ctx context.Context, field graphql.CollectedField, obj *bug.CreateOperation) (ret graphql.Marshaler) {
@@ -5368,13 +5349,13 @@ func (ec *executionContext) _CreateOperation_author(ctx context.Context, field g
 		Object:   "CreateOperation",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Author, nil
+		return ec.resolvers.CreateOperation().Author(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5386,10 +5367,10 @@ func (ec *executionContext) _CreateOperation_author(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CreateOperation_date(ctx context.Context, field graphql.CollectedField, obj *bug.CreateOperation) (ret graphql.Marshaler) {
@@ -5537,7 +5518,7 @@ func (ec *executionContext) _CreateOperation_files(ctx context.Context, field gr
 	res := resTmp.([]git.Hash)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHash(ctx, field.Selections, res)
+	return ec.marshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHashᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CreateTimelineItem_id(ctx context.Context, field graphql.CollectedField, obj *bug.CreateTimelineItem) (ret graphql.Marshaler) {
@@ -5590,13 +5571,13 @@ func (ec *executionContext) _CreateTimelineItem_author(ctx context.Context, fiel
 		Object:   "CreateTimelineItem",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Author, nil
+		return ec.resolvers.CreateTimelineItem().Author(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5608,10 +5589,10 @@ func (ec *executionContext) _CreateTimelineItem_author(ctx context.Context, fiel
 		}
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CreateTimelineItem_message(ctx context.Context, field graphql.CollectedField, obj *bug.CreateTimelineItem) (ret graphql.Marshaler) {
@@ -5722,7 +5703,7 @@ func (ec *executionContext) _CreateTimelineItem_files(ctx context.Context, field
 	res := resTmp.([]git.Hash)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHash(ctx, field.Selections, res)
+	return ec.marshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHashᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CreateTimelineItem_createdAt(ctx context.Context, field graphql.CollectedField, obj *bug.CreateTimelineItem) (ret graphql.Marshaler) {
@@ -5870,7 +5851,7 @@ func (ec *executionContext) _CreateTimelineItem_history(ctx context.Context, fie
 	res := resTmp.([]bug.CommentHistoryStep)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNCommentHistoryStep2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐCommentHistoryStep(ctx, field.Selections, res)
+	return ec.marshalNCommentHistoryStep2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐCommentHistoryStepᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _EditCommentOperation_id(ctx context.Context, field graphql.CollectedField, obj *bug.EditCommentOperation) (ret graphql.Marshaler) {
@@ -5923,13 +5904,13 @@ func (ec *executionContext) _EditCommentOperation_author(ctx context.Context, fi
 		Object:   "EditCommentOperation",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Author, nil
+		return ec.resolvers.EditCommentOperation().Author(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5941,10 +5922,10 @@ func (ec *executionContext) _EditCommentOperation_author(ctx context.Context, fi
 		}
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _EditCommentOperation_date(ctx context.Context, field graphql.CollectedField, obj *bug.EditCommentOperation) (ret graphql.Marshaler) {
@@ -6092,10 +6073,10 @@ func (ec *executionContext) _EditCommentOperation_files(ctx context.Context, fie
 	res := resTmp.([]git.Hash)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHash(ctx, field.Selections, res)
+	return ec.marshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHashᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Identity_id(ctx context.Context, field graphql.CollectedField, obj *identity.Interface) (ret graphql.Marshaler) {
+func (ec *executionContext) _Identity_id(ctx context.Context, field graphql.CollectedField, obj *models.Identity) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -6108,13 +6089,13 @@ func (ec *executionContext) _Identity_id(ctx context.Context, field graphql.Coll
 		Object:   "Identity",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Identity().ID(rctx, obj)
+		return obj.ID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6132,7 +6113,7 @@ func (ec *executionContext) _Identity_id(ctx context.Context, field graphql.Coll
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Identity_humanId(ctx context.Context, field graphql.CollectedField, obj *identity.Interface) (ret graphql.Marshaler) {
+func (ec *executionContext) _Identity_humanId(ctx context.Context, field graphql.CollectedField, obj *models.Identity) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -6145,13 +6126,13 @@ func (ec *executionContext) _Identity_humanId(ctx context.Context, field graphql
 		Object:   "Identity",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Identity().HumanID(rctx, obj)
+		return obj.HumanID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6169,7 +6150,7 @@ func (ec *executionContext) _Identity_humanId(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Identity_name(ctx context.Context, field graphql.CollectedField, obj *identity.Interface) (ret graphql.Marshaler) {
+func (ec *executionContext) _Identity_name(ctx context.Context, field graphql.CollectedField, obj *models.Identity) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -6182,13 +6163,13 @@ func (ec *executionContext) _Identity_name(ctx context.Context, field graphql.Co
 		Object:   "Identity",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Identity().Name(rctx, obj)
+		return obj.Name, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6203,7 +6184,7 @@ func (ec *executionContext) _Identity_name(ctx context.Context, field graphql.Co
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Identity_email(ctx context.Context, field graphql.CollectedField, obj *identity.Interface) (ret graphql.Marshaler) {
+func (ec *executionContext) _Identity_email(ctx context.Context, field graphql.CollectedField, obj *models.Identity) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -6216,13 +6197,13 @@ func (ec *executionContext) _Identity_email(ctx context.Context, field graphql.C
 		Object:   "Identity",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Identity().Email(rctx, obj)
+		return obj.Email, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6237,7 +6218,7 @@ func (ec *executionContext) _Identity_email(ctx context.Context, field graphql.C
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Identity_login(ctx context.Context, field graphql.CollectedField, obj *identity.Interface) (ret graphql.Marshaler) {
+func (ec *executionContext) _Identity_login(ctx context.Context, field graphql.CollectedField, obj *models.Identity) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -6250,13 +6231,13 @@ func (ec *executionContext) _Identity_login(ctx context.Context, field graphql.C
 		Object:   "Identity",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Identity().Login(rctx, obj)
+		return obj.Login, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6271,7 +6252,7 @@ func (ec *executionContext) _Identity_login(ctx context.Context, field graphql.C
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Identity_displayName(ctx context.Context, field graphql.CollectedField, obj *identity.Interface) (ret graphql.Marshaler) {
+func (ec *executionContext) _Identity_displayName(ctx context.Context, field graphql.CollectedField, obj *models.Identity) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -6284,13 +6265,13 @@ func (ec *executionContext) _Identity_displayName(ctx context.Context, field gra
 		Object:   "Identity",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Identity().DisplayName(rctx, obj)
+		return obj.DisplayName, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6308,7 +6289,7 @@ func (ec *executionContext) _Identity_displayName(ctx context.Context, field gra
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Identity_avatarUrl(ctx context.Context, field graphql.CollectedField, obj *identity.Interface) (ret graphql.Marshaler) {
+func (ec *executionContext) _Identity_avatarUrl(ctx context.Context, field graphql.CollectedField, obj *models.Identity) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -6321,13 +6302,13 @@ func (ec *executionContext) _Identity_avatarUrl(ctx context.Context, field graph
 		Object:   "Identity",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Identity().AvatarURL(rctx, obj)
+		return obj.AvatarURL, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6342,7 +6323,7 @@ func (ec *executionContext) _Identity_avatarUrl(ctx context.Context, field graph
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Identity_isProtected(ctx context.Context, field graphql.CollectedField, obj *identity.Interface) (ret graphql.Marshaler) {
+func (ec *executionContext) _Identity_isProtected(ctx context.Context, field graphql.CollectedField, obj *models.Identity) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -6355,13 +6336,13 @@ func (ec *executionContext) _Identity_isProtected(ctx context.Context, field gra
 		Object:   "Identity",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Identity().IsProtected(rctx, obj)
+		return obj.IsProtected, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6413,7 +6394,7 @@ func (ec *executionContext) _IdentityConnection_edges(ctx context.Context, field
 	res := resTmp.([]*models.IdentityEdge)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentityEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentityEdge(ctx, field.Selections, res)
+	return ec.marshalNIdentityEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentityEdgeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _IdentityConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *models.IdentityConnection) (ret graphql.Marshaler) {
@@ -6447,10 +6428,10 @@ func (ec *executionContext) _IdentityConnection_nodes(ctx context.Context, field
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]identity.Interface)
+	res := resTmp.([]*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentity2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalNIdentity2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentityᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _IdentityConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *models.IdentityConnection) (ret graphql.Marshaler) {
@@ -6595,10 +6576,10 @@ func (ec *executionContext) _IdentityEdge_node(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Label_name(ctx context.Context, field graphql.CollectedField, obj *bug.Label) (ret graphql.Marshaler) {
@@ -6725,13 +6706,13 @@ func (ec *executionContext) _LabelChangeOperation_author(ctx context.Context, fi
 		Object:   "LabelChangeOperation",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Author, nil
+		return ec.resolvers.LabelChangeOperation().Author(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6743,10 +6724,10 @@ func (ec *executionContext) _LabelChangeOperation_author(ctx context.Context, fi
 		}
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _LabelChangeOperation_date(ctx context.Context, field graphql.CollectedField, obj *bug.LabelChangeOperation) (ret graphql.Marshaler) {
@@ -6820,7 +6801,7 @@ func (ec *executionContext) _LabelChangeOperation_added(ctx context.Context, fie
 	res := resTmp.([]bug.Label)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNLabel2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐLabel(ctx, field.Selections, res)
+	return ec.marshalNLabel2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐLabelᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _LabelChangeOperation_removed(ctx context.Context, field graphql.CollectedField, obj *bug.LabelChangeOperation) (ret graphql.Marshaler) {
@@ -6857,7 +6838,7 @@ func (ec *executionContext) _LabelChangeOperation_removed(ctx context.Context, f
 	res := resTmp.([]bug.Label)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNLabel2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐLabel(ctx, field.Selections, res)
+	return ec.marshalNLabel2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐLabelᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _LabelChangeResult_label(ctx context.Context, field graphql.CollectedField, obj *bug.LabelChangeResult) (ret graphql.Marshaler) {
@@ -6984,13 +6965,13 @@ func (ec *executionContext) _LabelChangeTimelineItem_author(ctx context.Context,
 		Object:   "LabelChangeTimelineItem",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Author, nil
+		return ec.resolvers.LabelChangeTimelineItem().Author(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7002,10 +6983,10 @@ func (ec *executionContext) _LabelChangeTimelineItem_author(ctx context.Context,
 		}
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _LabelChangeTimelineItem_date(ctx context.Context, field graphql.CollectedField, obj *bug.LabelChangeTimelineItem) (ret graphql.Marshaler) {
@@ -7079,7 +7060,7 @@ func (ec *executionContext) _LabelChangeTimelineItem_added(ctx context.Context, 
 	res := resTmp.([]bug.Label)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNLabel2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐLabel(ctx, field.Selections, res)
+	return ec.marshalNLabel2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐLabelᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _LabelChangeTimelineItem_removed(ctx context.Context, field graphql.CollectedField, obj *bug.LabelChangeTimelineItem) (ret graphql.Marshaler) {
@@ -7116,7 +7097,7 @@ func (ec *executionContext) _LabelChangeTimelineItem_removed(ctx context.Context
 	res := resTmp.([]bug.Label)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNLabel2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐLabel(ctx, field.Selections, res)
+	return ec.marshalNLabel2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐLabelᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _LabelConnection_edges(ctx context.Context, field graphql.CollectedField, obj *models.LabelConnection) (ret graphql.Marshaler) {
@@ -7153,7 +7134,7 @@ func (ec *executionContext) _LabelConnection_edges(ctx context.Context, field gr
 	res := resTmp.([]*models.LabelEdge)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNLabelEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐLabelEdge(ctx, field.Selections, res)
+	return ec.marshalNLabelEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐLabelEdgeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _LabelConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *models.LabelConnection) (ret graphql.Marshaler) {
@@ -7190,7 +7171,7 @@ func (ec *executionContext) _LabelConnection_nodes(ctx context.Context, field gr
 	res := resTmp.([]bug.Label)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNLabel2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐLabel(ctx, field.Selections, res)
+	return ec.marshalNLabel2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐLabelᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _LabelConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *models.LabelConnection) (ret graphql.Marshaler) {
@@ -7758,10 +7739,10 @@ func (ec *executionContext) _NewBugPayload_bug(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*bug.Snapshot)
+	res := resTmp.(*models.Bug)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx, field.Selections, res)
+	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBug(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _NewBugPayload_operation(ctx context.Context, field graphql.CollectedField, obj *models.NewBugPayload) (ret graphql.Marshaler) {
@@ -7866,10 +7847,10 @@ func (ec *executionContext) _OpenBugPayload_bug(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*bug.Snapshot)
+	res := resTmp.(*models.Bug)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx, field.Selections, res)
+	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBug(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _OpenBugPayload_operation(ctx context.Context, field graphql.CollectedField, obj *models.OpenBugPayload) (ret graphql.Marshaler) {
@@ -7943,7 +7924,7 @@ func (ec *executionContext) _OperationConnection_edges(ctx context.Context, fiel
 	res := resTmp.([]*models.OperationEdge)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNOperationEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐOperationEdge(ctx, field.Selections, res)
+	return ec.marshalNOperationEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐOperationEdgeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _OperationConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *models.OperationConnection) (ret graphql.Marshaler) {
@@ -7977,10 +7958,10 @@ func (ec *executionContext) _OperationConnection_nodes(ctx context.Context, fiel
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]bug.Operation)
+	res := resTmp.([]models.Operation)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNOperation2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐOperation(ctx, field.Selections, res)
+	return ec.marshalNOperation2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐOperationᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _OperationConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *models.OperationConnection) (ret graphql.Marshaler) {
@@ -8125,10 +8106,10 @@ func (ec *executionContext) _OperationEdge_node(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bug.Operation)
+	res := resTmp.(models.Operation)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNOperation2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐOperation(ctx, field.Selections, res)
+	return ec.marshalNOperation2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐOperation(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field graphql.CollectedField, obj *models.PageInfo) (ret graphql.Marshaler) {
@@ -8508,10 +8489,10 @@ func (ec *executionContext) _Repository_bug(ctx context.Context, field graphql.C
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*bug.Snapshot)
+	res := resTmp.(*models.Bug)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx, field.Selections, res)
+	return ec.marshalOBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBug(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Repository_allIdentities(ctx context.Context, field graphql.CollectedField, obj *models.Repository) (ret graphql.Marshaler) {
@@ -8593,10 +8574,10 @@ func (ec *executionContext) _Repository_identity(ctx context.Context, field grap
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalOIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Repository_userIdentity(ctx context.Context, field graphql.CollectedField, obj *models.Repository) (ret graphql.Marshaler) {
@@ -8627,10 +8608,10 @@ func (ec *executionContext) _Repository_userIdentity(ctx context.Context, field 
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalOIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Repository_validLabels(ctx context.Context, field graphql.CollectedField, obj *models.Repository) (ret graphql.Marshaler) {
@@ -8727,13 +8708,13 @@ func (ec *executionContext) _SetStatusOperation_author(ctx context.Context, fiel
 		Object:   "SetStatusOperation",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Author, nil
+		return ec.resolvers.SetStatusOperation().Author(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8745,10 +8726,10 @@ func (ec *executionContext) _SetStatusOperation_author(ctx context.Context, fiel
 		}
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _SetStatusOperation_date(ctx context.Context, field graphql.CollectedField, obj *bug.SetStatusOperation) (ret graphql.Marshaler) {
@@ -8875,13 +8856,13 @@ func (ec *executionContext) _SetStatusTimelineItem_author(ctx context.Context, f
 		Object:   "SetStatusTimelineItem",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Author, nil
+		return ec.resolvers.SetStatusTimelineItem().Author(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8893,10 +8874,10 @@ func (ec *executionContext) _SetStatusTimelineItem_author(ctx context.Context, f
 		}
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _SetStatusTimelineItem_date(ctx context.Context, field graphql.CollectedField, obj *bug.SetStatusTimelineItem) (ret graphql.Marshaler) {
@@ -9023,13 +9004,13 @@ func (ec *executionContext) _SetTitleOperation_author(ctx context.Context, field
 		Object:   "SetTitleOperation",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Author, nil
+		return ec.resolvers.SetTitleOperation().Author(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9041,10 +9022,10 @@ func (ec *executionContext) _SetTitleOperation_author(ctx context.Context, field
 		}
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _SetTitleOperation_date(ctx context.Context, field graphql.CollectedField, obj *bug.SetTitleOperation) (ret graphql.Marshaler) {
@@ -9223,10 +9204,10 @@ func (ec *executionContext) _SetTitlePayload_bug(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*bug.Snapshot)
+	res := resTmp.(*models.Bug)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx, field.Selections, res)
+	return ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBug(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _SetTitlePayload_operation(ctx context.Context, field graphql.CollectedField, obj *models.SetTitlePayload) (ret graphql.Marshaler) {
@@ -9316,13 +9297,13 @@ func (ec *executionContext) _SetTitleTimelineItem_author(ctx context.Context, fi
 		Object:   "SetTitleTimelineItem",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Author, nil
+		return ec.resolvers.SetTitleTimelineItem().Author(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9334,10 +9315,10 @@ func (ec *executionContext) _SetTitleTimelineItem_author(ctx context.Context, fi
 		}
 		return graphql.Null
 	}
-	res := resTmp.(identity.Interface)
+	res := resTmp.(*models.Identity)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, field.Selections, res)
+	return ec.marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _SetTitleTimelineItem_date(ctx context.Context, field graphql.CollectedField, obj *bug.SetTitleTimelineItem) (ret graphql.Marshaler) {
@@ -9485,7 +9466,7 @@ func (ec *executionContext) _TimelineItemConnection_edges(ctx context.Context, f
 	res := resTmp.([]*models.TimelineItemEdge)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNTimelineItemEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐTimelineItemEdge(ctx, field.Selections, res)
+	return ec.marshalNTimelineItemEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐTimelineItemEdgeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TimelineItemConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *models.TimelineItemConnection) (ret graphql.Marshaler) {
@@ -9522,7 +9503,7 @@ func (ec *executionContext) _TimelineItemConnection_nodes(ctx context.Context, f
 	res := resTmp.([]bug.TimelineItem)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNTimelineItem2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐTimelineItem(ctx, field.Selections, res)
+	return ec.marshalNTimelineItem2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐTimelineItemᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TimelineItemConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *models.TimelineItemConnection) (ret graphql.Marshaler) {
@@ -9778,7 +9759,7 @@ func (ec *executionContext) ___Directive_locations(ctx context.Context, field gr
 	res := resTmp.([]string)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalN__DirectiveLocation2ᚕstring(ctx, field.Selections, res)
+	return ec.marshalN__DirectiveLocation2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_args(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -9815,7 +9796,7 @@ func (ec *executionContext) ___Directive_args(ctx context.Context, field graphql
 	res := resTmp.([]introspection.InputValue)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalN__InputValue2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx, field.Selections, res)
+	return ec.marshalN__InputValue2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___EnumValue_name(ctx context.Context, field graphql.CollectedField, obj *introspection.EnumValue) (ret graphql.Marshaler) {
@@ -10065,7 +10046,7 @@ func (ec *executionContext) ___Field_args(ctx context.Context, field graphql.Col
 	res := resTmp.([]introspection.InputValue)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalN__InputValue2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx, field.Selections, res)
+	return ec.marshalN__InputValue2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Field_type(ctx context.Context, field graphql.CollectedField, obj *introspection.Field) (ret graphql.Marshaler) {
@@ -10352,7 +10333,7 @@ func (ec *executionContext) ___Schema_types(ctx context.Context, field graphql.C
 	res := resTmp.([]introspection.Type)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalN__Type2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
+	return ec.marshalN__Type2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Schema_queryType(ctx context.Context, field graphql.CollectedField, obj *introspection.Schema) (ret graphql.Marshaler) {
@@ -10494,7 +10475,7 @@ func (ec *executionContext) ___Schema_directives(ctx context.Context, field grap
 	res := resTmp.([]introspection.Directive)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalN__Directive2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx, field.Selections, res)
+	return ec.marshalN__Directive2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirectiveᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Type_kind(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
@@ -10640,7 +10621,7 @@ func (ec *executionContext) ___Type_fields(ctx context.Context, field graphql.Co
 	res := resTmp.([]introspection.Field)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalO__Field2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐField(ctx, field.Selections, res)
+	return ec.marshalO__Field2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐFieldᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Type_interfaces(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
@@ -10674,7 +10655,7 @@ func (ec *executionContext) ___Type_interfaces(ctx context.Context, field graphq
 	res := resTmp.([]introspection.Type)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalO__Type2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
+	return ec.marshalO__Type2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Type_possibleTypes(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
@@ -10708,7 +10689,7 @@ func (ec *executionContext) ___Type_possibleTypes(ctx context.Context, field gra
 	res := resTmp.([]introspection.Type)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalO__Type2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
+	return ec.marshalO__Type2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Type_enumValues(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
@@ -10749,7 +10730,7 @@ func (ec *executionContext) ___Type_enumValues(ctx context.Context, field graphq
 	res := resTmp.([]introspection.EnumValue)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalO__EnumValue2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue(ctx, field.Selections, res)
+	return ec.marshalO__EnumValue2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Type_inputFields(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
@@ -10783,7 +10764,7 @@ func (ec *executionContext) ___Type_inputFields(ctx context.Context, field graph
 	res := resTmp.([]introspection.InputValue)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalO__InputValue2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx, field.Selections, res)
+	return ec.marshalO__InputValue2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
@@ -10856,7 +10837,7 @@ func (ec *executionContext) unmarshalInputAddCommentInput(ctx context.Context, o
 			}
 		case "files":
 			var err error
-			it.Files, err = ec.unmarshalOHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHash(ctx, v)
+			it.Files, err = ec.unmarshalOHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHashᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -10892,13 +10873,13 @@ func (ec *executionContext) unmarshalInputChangeLabelInput(ctx context.Context, 
 			}
 		case "added":
 			var err error
-			it.Added, err = ec.unmarshalOString2ᚕstring(ctx, v)
+			it.Added, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "Removed":
 			var err error
-			it.Removed, err = ec.unmarshalOString2ᚕstring(ctx, v)
+			it.Removed, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -11030,7 +11011,7 @@ func (ec *executionContext) unmarshalInputNewBugInput(ctx context.Context, obj i
 			}
 		case "files":
 			var err error
-			it.Files, err = ec.unmarshalOHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHash(ctx, v)
+			it.Files, err = ec.unmarshalOHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHashᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -11110,83 +11091,157 @@ func (ec *executionContext) unmarshalInputSetTitleInput(ctx context.Context, obj
 
 // region    ************************** interface.gotpl ***************************
 
-func (ec *executionContext) _Authored(ctx context.Context, sel ast.SelectionSet, obj *models.Authored) graphql.Marshaler {
-	switch obj := (*obj).(type) {
+func (ec *executionContext) _Authored(ctx context.Context, sel ast.SelectionSet, obj models.Authored) graphql.Marshaler {
+	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
 	case bug.Comment:
 		return ec._Comment(ctx, sel, &obj)
 	case *bug.Comment:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._Comment(ctx, sel, obj)
-	case *bug.Snapshot:
+	case models.Bug:
+		return ec._Bug(ctx, sel, &obj)
+	case *models.Bug:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._Bug(ctx, sel, obj)
 	case *bug.CreateOperation:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._CreateOperation(ctx, sel, obj)
 	case *bug.SetTitleOperation:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._SetTitleOperation(ctx, sel, obj)
 	case *bug.AddCommentOperation:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._AddCommentOperation(ctx, sel, obj)
 	case *bug.EditCommentOperation:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._EditCommentOperation(ctx, sel, obj)
 	case *bug.SetStatusOperation:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._SetStatusOperation(ctx, sel, obj)
 	case *bug.LabelChangeOperation:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._LabelChangeOperation(ctx, sel, obj)
 	case *bug.CreateTimelineItem:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._CreateTimelineItem(ctx, sel, obj)
 	case *bug.AddCommentTimelineItem:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._AddCommentTimelineItem(ctx, sel, obj)
 	case *bug.LabelChangeTimelineItem:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._LabelChangeTimelineItem(ctx, sel, obj)
 	case *bug.SetStatusTimelineItem:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._SetStatusTimelineItem(ctx, sel, obj)
 	case *bug.SetTitleTimelineItem:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._SetTitleTimelineItem(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
 }
 
-func (ec *executionContext) _Operation(ctx context.Context, sel ast.SelectionSet, obj *bug.Operation) graphql.Marshaler {
-	switch obj := (*obj).(type) {
+func (ec *executionContext) _Operation(ctx context.Context, sel ast.SelectionSet, obj models.Operation) graphql.Marshaler {
+	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
 	case *bug.CreateOperation:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._CreateOperation(ctx, sel, obj)
 	case *bug.SetTitleOperation:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._SetTitleOperation(ctx, sel, obj)
 	case *bug.AddCommentOperation:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._AddCommentOperation(ctx, sel, obj)
 	case *bug.EditCommentOperation:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._EditCommentOperation(ctx, sel, obj)
 	case *bug.SetStatusOperation:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._SetStatusOperation(ctx, sel, obj)
 	case *bug.LabelChangeOperation:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._LabelChangeOperation(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
 }
 
-func (ec *executionContext) _TimelineItem(ctx context.Context, sel ast.SelectionSet, obj *bug.TimelineItem) graphql.Marshaler {
-	switch obj := (*obj).(type) {
+func (ec *executionContext) _TimelineItem(ctx context.Context, sel ast.SelectionSet, obj bug.TimelineItem) graphql.Marshaler {
+	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
 	case *bug.CreateTimelineItem:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._CreateTimelineItem(ctx, sel, obj)
 	case *bug.AddCommentTimelineItem:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._AddCommentTimelineItem(ctx, sel, obj)
 	case bug.LabelChangeTimelineItem:
 		return ec._LabelChangeTimelineItem(ctx, sel, &obj)
 	case *bug.LabelChangeTimelineItem:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._LabelChangeTimelineItem(ctx, sel, obj)
 	case bug.SetStatusTimelineItem:
 		return ec._SetStatusTimelineItem(ctx, sel, &obj)
 	case *bug.SetStatusTimelineItem:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._SetStatusTimelineItem(ctx, sel, obj)
 	case bug.SetTitleTimelineItem:
 		return ec._SetTitleTimelineItem(ctx, sel, &obj)
 	case *bug.SetTitleTimelineItem:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._SetTitleTimelineItem(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
@@ -11223,10 +11278,19 @@ func (ec *executionContext) _AddCommentOperation(ctx context.Context, sel ast.Se
 				return res
 			})
 		case "author":
-			out.Values[i] = ec._AddCommentOperation_author(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AddCommentOperation_author(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "date":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -11322,10 +11386,19 @@ func (ec *executionContext) _AddCommentTimelineItem(ctx context.Context, sel ast
 				return res
 			})
 		case "author":
-			out.Values[i] = ec._AddCommentTimelineItem_author(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AddCommentTimelineItem_author(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "message":
 			out.Values[i] = ec._AddCommentTimelineItem_message(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -11392,7 +11465,7 @@ func (ec *executionContext) _AddCommentTimelineItem(ctx context.Context, sel ast
 
 var bugImplementors = []string{"Bug", "Authored"}
 
-func (ec *executionContext) _Bug(ctx context.Context, sel ast.SelectionSet, obj *bug.Snapshot) graphql.Marshaler {
+func (ec *executionContext) _Bug(ctx context.Context, sel ast.SelectionSet, obj *models.Bug) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.RequestContext, sel, bugImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -11402,151 +11475,70 @@ func (ec *executionContext) _Bug(ctx context.Context, sel ast.SelectionSet, obj 
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Bug")
 		case "id":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Bug_id(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Bug_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "humanId":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Bug_humanId(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Bug_humanId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "status":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Bug_status(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Bug_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "title":
 			out.Values[i] = ec._Bug_title(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		case "labels":
 			out.Values[i] = ec._Bug_labels(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		case "author":
 			out.Values[i] = ec._Bug_author(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		case "createdAt":
 			out.Values[i] = ec._Bug_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		case "lastEdit":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Bug_lastEdit(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Bug_lastEdit(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "actors":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Bug_actors(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Bug_actors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "participants":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Bug_participants(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Bug_participants(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "comments":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Bug_comments(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Bug_comments(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "timeline":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Bug_timeline(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Bug_timeline(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "operations":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Bug_operations(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Bug_operations(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11781,19 +11773,28 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Comment")
 		case "author":
-			out.Values[i] = ec._Comment_author(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Comment_author(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "message":
 			out.Values[i] = ec._Comment_message(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "files":
 			out.Values[i] = ec._Comment_files(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -12005,10 +12006,19 @@ func (ec *executionContext) _CreateOperation(ctx context.Context, sel ast.Select
 				return res
 			})
 		case "author":
-			out.Values[i] = ec._CreateOperation_author(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CreateOperation_author(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "date":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -12075,10 +12085,19 @@ func (ec *executionContext) _CreateTimelineItem(ctx context.Context, sel ast.Sel
 				return res
 			})
 		case "author":
-			out.Values[i] = ec._CreateTimelineItem_author(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CreateTimelineItem_author(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "message":
 			out.Values[i] = ec._CreateTimelineItem_message(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -12169,10 +12188,19 @@ func (ec *executionContext) _EditCommentOperation(ctx context.Context, sel ast.S
 				return res
 			})
 		case "author":
-			out.Values[i] = ec._EditCommentOperation_author(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._EditCommentOperation_author(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "date":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -12224,7 +12252,7 @@ func (ec *executionContext) _EditCommentOperation(ctx context.Context, sel ast.S
 
 var identityImplementors = []string{"Identity"}
 
-func (ec *executionContext) _Identity(ctx context.Context, sel ast.SelectionSet, obj *identity.Interface) graphql.Marshaler {
+func (ec *executionContext) _Identity(ctx context.Context, sel ast.SelectionSet, obj *models.Identity) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.RequestContext, sel, identityImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -12234,105 +12262,33 @@ func (ec *executionContext) _Identity(ctx context.Context, sel ast.SelectionSet,
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Identity")
 		case "id":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Identity_id(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Identity_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "humanId":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Identity_humanId(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Identity_humanId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "name":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Identity_name(ctx, field, obj)
-				return res
-			})
+			out.Values[i] = ec._Identity_name(ctx, field, obj)
 		case "email":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Identity_email(ctx, field, obj)
-				return res
-			})
+			out.Values[i] = ec._Identity_email(ctx, field, obj)
 		case "login":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Identity_login(ctx, field, obj)
-				return res
-			})
+			out.Values[i] = ec._Identity_login(ctx, field, obj)
 		case "displayName":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Identity_displayName(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Identity_displayName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "avatarUrl":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Identity_avatarUrl(ctx, field, obj)
-				return res
-			})
+			out.Values[i] = ec._Identity_avatarUrl(ctx, field, obj)
 		case "isProtected":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Identity_isProtected(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Identity_isProtected(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -12494,10 +12450,19 @@ func (ec *executionContext) _LabelChangeOperation(ctx context.Context, sel ast.S
 				return res
 			})
 		case "author":
-			out.Values[i] = ec._LabelChangeOperation_author(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._LabelChangeOperation_author(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "date":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -12600,10 +12565,19 @@ func (ec *executionContext) _LabelChangeTimelineItem(ctx context.Context, sel as
 				return res
 			})
 		case "author":
-			out.Values[i] = ec._LabelChangeTimelineItem_author(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._LabelChangeTimelineItem_author(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "date":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -13138,10 +13112,19 @@ func (ec *executionContext) _SetStatusOperation(ctx context.Context, sel ast.Sel
 				return res
 			})
 		case "author":
-			out.Values[i] = ec._SetStatusOperation_author(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SetStatusOperation_author(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "date":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -13207,10 +13190,19 @@ func (ec *executionContext) _SetStatusTimelineItem(ctx context.Context, sel ast.
 				return res
 			})
 		case "author":
-			out.Values[i] = ec._SetStatusTimelineItem_author(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SetStatusTimelineItem_author(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "date":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -13276,10 +13268,19 @@ func (ec *executionContext) _SetTitleOperation(ctx context.Context, sel ast.Sele
 				return res
 			})
 		case "author":
-			out.Values[i] = ec._SetTitleOperation_author(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SetTitleOperation_author(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "date":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -13375,10 +13376,19 @@ func (ec *executionContext) _SetTitleTimelineItem(ctx context.Context, sel ast.S
 				return res
 			})
 		case "author":
-			out.Values[i] = ec._SetTitleTimelineItem_author(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SetTitleTimelineItem_author(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "date":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -13779,11 +13789,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNBug2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx context.Context, sel ast.SelectionSet, v bug.Snapshot) graphql.Marshaler {
+func (ec *executionContext) marshalNBug2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBug(ctx context.Context, sel ast.SelectionSet, v models.Bug) graphql.Marshaler {
 	return ec._Bug(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNBug2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx context.Context, sel ast.SelectionSet, v []*bug.Snapshot) graphql.Marshaler {
+func (ec *executionContext) marshalNBug2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBugᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Bug) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -13807,7 +13817,7 @@ func (ec *executionContext) marshalNBug2ᚕᚖgithubᚗcomᚋMichaelMureᚋgit�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx, sel, v[i])
+			ret[i] = ec.marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBug(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -13820,7 +13830,7 @@ func (ec *executionContext) marshalNBug2ᚕᚖgithubᚗcomᚋMichaelMureᚋgit�
 	return ret
 }
 
-func (ec *executionContext) marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx context.Context, sel ast.SelectionSet, v *bug.Snapshot) graphql.Marshaler {
+func (ec *executionContext) marshalNBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBug(ctx context.Context, sel ast.SelectionSet, v *models.Bug) graphql.Marshaler {
 	if v == nil {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -13848,7 +13858,7 @@ func (ec *executionContext) marshalNBugEdge2githubᚗcomᚋMichaelMureᚋgitᚑb
 	return ec._BugEdge(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNBugEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBugEdge(ctx context.Context, sel ast.SelectionSet, v []*models.BugEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNBugEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBugEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.BugEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -13945,7 +13955,7 @@ func (ec *executionContext) marshalNComment2githubᚗcomᚋMichaelMureᚋgitᚑb
 	return ec._Comment(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNComment2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐComment(ctx context.Context, sel ast.SelectionSet, v []*bug.Comment) graphql.Marshaler {
+func (ec *executionContext) marshalNComment2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐCommentᚄ(ctx context.Context, sel ast.SelectionSet, v []*bug.Comment) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14010,7 +14020,7 @@ func (ec *executionContext) marshalNCommentEdge2githubᚗcomᚋMichaelMureᚋgit
 	return ec._CommentEdge(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNCommentEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐCommentEdge(ctx context.Context, sel ast.SelectionSet, v []*models.CommentEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNCommentEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐCommentEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.CommentEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14061,7 +14071,7 @@ func (ec *executionContext) marshalNCommentHistoryStep2githubᚗcomᚋMichaelMur
 	return ec._CommentHistoryStep(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNCommentHistoryStep2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐCommentHistoryStep(ctx context.Context, sel ast.SelectionSet, v []bug.CommentHistoryStep) graphql.Marshaler {
+func (ec *executionContext) marshalNCommentHistoryStep2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐCommentHistoryStepᚄ(ctx context.Context, sel ast.SelectionSet, v []bug.CommentHistoryStep) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14157,7 +14167,7 @@ func (ec *executionContext) marshalNHash2githubᚗcomᚋMichaelMureᚋgitᚑbug�
 	return v
 }
 
-func (ec *executionContext) unmarshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHash(ctx context.Context, v interface{}) ([]git.Hash, error) {
+func (ec *executionContext) unmarshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHashᚄ(ctx context.Context, v interface{}) ([]git.Hash, error) {
 	var vSlice []interface{}
 	if v != nil {
 		if tmp1, ok := v.([]interface{}); ok {
@@ -14177,7 +14187,7 @@ func (ec *executionContext) unmarshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgit�
 	return res, nil
 }
 
-func (ec *executionContext) marshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHash(ctx context.Context, sel ast.SelectionSet, v []git.Hash) graphql.Marshaler {
+func (ec *executionContext) marshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHashᚄ(ctx context.Context, sel ast.SelectionSet, v []git.Hash) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	for i := range v {
 		ret[i] = ec.marshalNHash2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHash(ctx, sel, v[i])
@@ -14186,11 +14196,11 @@ func (ec *executionContext) marshalNHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑb
 	return ret
 }
 
-func (ec *executionContext) marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx context.Context, sel ast.SelectionSet, v identity.Interface) graphql.Marshaler {
+func (ec *executionContext) marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx context.Context, sel ast.SelectionSet, v models.Identity) graphql.Marshaler {
 	return ec._Identity(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNIdentity2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx context.Context, sel ast.SelectionSet, v []identity.Interface) graphql.Marshaler {
+func (ec *executionContext) marshalNIdentity2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentityᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Identity) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14214,7 +14224,7 @@ func (ec *executionContext) marshalNIdentity2ᚕgithubᚗcomᚋMichaelMureᚋgit
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx, sel, v[i])
+			ret[i] = ec.marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -14225,6 +14235,16 @@ func (ec *executionContext) marshalNIdentity2ᚕgithubᚗcomᚋMichaelMureᚋgit
 	}
 	wg.Wait()
 	return ret
+}
+
+func (ec *executionContext) marshalNIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx context.Context, sel ast.SelectionSet, v *models.Identity) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Identity(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNIdentityConnection2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentityConnection(ctx context.Context, sel ast.SelectionSet, v models.IdentityConnection) graphql.Marshaler {
@@ -14245,7 +14265,7 @@ func (ec *executionContext) marshalNIdentityEdge2githubᚗcomᚋMichaelMureᚋgi
 	return ec._IdentityEdge(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNIdentityEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentityEdge(ctx context.Context, sel ast.SelectionSet, v []*models.IdentityEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNIdentityEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentityEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.IdentityEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14310,7 +14330,7 @@ func (ec *executionContext) marshalNLabel2githubᚗcomᚋMichaelMureᚋgitᚑbug
 	return ec._Label(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNLabel2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐLabel(ctx context.Context, sel ast.SelectionSet, v []bug.Label) graphql.Marshaler {
+func (ec *executionContext) marshalNLabel2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐLabelᚄ(ctx context.Context, sel ast.SelectionSet, v []bug.Label) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14425,7 +14445,7 @@ func (ec *executionContext) marshalNLabelEdge2githubᚗcomᚋMichaelMureᚋgit�
 	return ec._LabelEdge(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNLabelEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐLabelEdge(ctx context.Context, sel ast.SelectionSet, v []*models.LabelEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNLabelEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐLabelEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.LabelEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14508,11 +14528,17 @@ func (ec *executionContext) marshalNOpenBugPayload2ᚖgithubᚗcomᚋMichaelMure
 	return ec._OpenBugPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNOperation2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐOperation(ctx context.Context, sel ast.SelectionSet, v bug.Operation) graphql.Marshaler {
-	return ec._Operation(ctx, sel, &v)
+func (ec *executionContext) marshalNOperation2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐOperation(ctx context.Context, sel ast.SelectionSet, v models.Operation) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Operation(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNOperation2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐOperation(ctx context.Context, sel ast.SelectionSet, v []bug.Operation) graphql.Marshaler {
+func (ec *executionContext) marshalNOperation2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐOperationᚄ(ctx context.Context, sel ast.SelectionSet, v []models.Operation) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14536,7 +14562,7 @@ func (ec *executionContext) marshalNOperation2ᚕgithubᚗcomᚋMichaelMureᚋgi
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNOperation2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐOperation(ctx, sel, v[i])
+			ret[i] = ec.marshalNOperation2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐOperation(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -14567,7 +14593,7 @@ func (ec *executionContext) marshalNOperationEdge2githubᚗcomᚋMichaelMureᚋg
 	return ec._OperationEdge(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNOperationEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐOperationEdge(ctx context.Context, sel ast.SelectionSet, v []*models.OperationEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNOperationEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐOperationEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.OperationEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14730,10 +14756,16 @@ func (ec *executionContext) marshalNTime2ᚖtimeᚐTime(ctx context.Context, sel
 }
 
 func (ec *executionContext) marshalNTimelineItem2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐTimelineItem(ctx context.Context, sel ast.SelectionSet, v bug.TimelineItem) graphql.Marshaler {
-	return ec._TimelineItem(ctx, sel, &v)
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._TimelineItem(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNTimelineItem2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐTimelineItem(ctx context.Context, sel ast.SelectionSet, v []bug.TimelineItem) graphql.Marshaler {
+func (ec *executionContext) marshalNTimelineItem2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐTimelineItemᚄ(ctx context.Context, sel ast.SelectionSet, v []bug.TimelineItem) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14788,7 +14820,7 @@ func (ec *executionContext) marshalNTimelineItemEdge2githubᚗcomᚋMichaelMure�
 	return ec._TimelineItemEdge(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNTimelineItemEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐTimelineItemEdge(ctx context.Context, sel ast.SelectionSet, v []*models.TimelineItemEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNTimelineItemEdge2ᚕᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐTimelineItemEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.TimelineItemEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14839,7 +14871,7 @@ func (ec *executionContext) marshalN__Directive2githubᚗcomᚋMichaelMureᚋgit
 	return ec.___Directive(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalN__Directive2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v []introspection.Directive) graphql.Marshaler {
+func (ec *executionContext) marshalN__Directive2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirectiveᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.Directive) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14890,7 +14922,7 @@ func (ec *executionContext) marshalN__DirectiveLocation2string(ctx context.Conte
 	return res
 }
 
-func (ec *executionContext) unmarshalN__DirectiveLocation2ᚕstring(ctx context.Context, v interface{}) ([]string, error) {
+func (ec *executionContext) unmarshalN__DirectiveLocation2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
 	var vSlice []interface{}
 	if v != nil {
 		if tmp1, ok := v.([]interface{}); ok {
@@ -14910,7 +14942,7 @@ func (ec *executionContext) unmarshalN__DirectiveLocation2ᚕstring(ctx context.
 	return res, nil
 }
 
-func (ec *executionContext) marshalN__DirectiveLocation2ᚕstring(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+func (ec *executionContext) marshalN__DirectiveLocation2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14959,7 +14991,7 @@ func (ec *executionContext) marshalN__InputValue2githubᚗcomᚋMichaelMureᚋgi
 	return ec.___InputValue(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalN__InputValue2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx context.Context, sel ast.SelectionSet, v []introspection.InputValue) graphql.Marshaler {
+func (ec *executionContext) marshalN__InputValue2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.InputValue) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -15000,7 +15032,7 @@ func (ec *executionContext) marshalN__Type2githubᚗcomᚋMichaelMureᚋgitᚑbu
 	return ec.___Type(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalN__Type2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, sel ast.SelectionSet, v []introspection.Type) graphql.Marshaler {
+func (ec *executionContext) marshalN__Type2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.Type) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -15084,11 +15116,11 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return ec.marshalOBoolean2bool(ctx, sel, *v)
 }
 
-func (ec *executionContext) marshalOBug2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx context.Context, sel ast.SelectionSet, v bug.Snapshot) graphql.Marshaler {
+func (ec *executionContext) marshalOBug2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBug(ctx context.Context, sel ast.SelectionSet, v models.Bug) graphql.Marshaler {
 	return ec._Bug(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋbugᚐSnapshot(ctx context.Context, sel ast.SelectionSet, v *bug.Snapshot) graphql.Marshaler {
+func (ec *executionContext) marshalOBug2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐBug(ctx context.Context, sel ast.SelectionSet, v *models.Bug) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -15107,7 +15139,7 @@ func (ec *executionContext) unmarshalOChangeLabelInput2ᚖgithubᚗcomᚋMichael
 	return &res, err
 }
 
-func (ec *executionContext) unmarshalOHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHash(ctx context.Context, v interface{}) ([]git.Hash, error) {
+func (ec *executionContext) unmarshalOHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHashᚄ(ctx context.Context, v interface{}) ([]git.Hash, error) {
 	var vSlice []interface{}
 	if v != nil {
 		if tmp1, ok := v.([]interface{}); ok {
@@ -15127,7 +15159,7 @@ func (ec *executionContext) unmarshalOHash2ᚕgithubᚗcomᚋMichaelMureᚋgit�
 	return res, nil
 }
 
-func (ec *executionContext) marshalOHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHash(ctx context.Context, sel ast.SelectionSet, v []git.Hash) graphql.Marshaler {
+func (ec *executionContext) marshalOHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋutilᚋgitᚐHashᚄ(ctx context.Context, sel ast.SelectionSet, v []git.Hash) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -15139,8 +15171,15 @@ func (ec *executionContext) marshalOHash2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑb
 	return ret
 }
 
-func (ec *executionContext) marshalOIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋidentityᚐInterface(ctx context.Context, sel ast.SelectionSet, v identity.Interface) graphql.Marshaler {
+func (ec *executionContext) marshalOIdentity2githubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx context.Context, sel ast.SelectionSet, v models.Identity) graphql.Marshaler {
 	return ec._Identity(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOIdentity2ᚖgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋgraphqlᚋmodelsᚐIdentity(ctx context.Context, sel ast.SelectionSet, v *models.Identity) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Identity(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOInt2int(ctx context.Context, v interface{}) (int, error) {
@@ -15196,7 +15235,7 @@ func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.S
 	return graphql.MarshalString(v)
 }
 
-func (ec *executionContext) unmarshalOString2ᚕstring(ctx context.Context, v interface{}) ([]string, error) {
+func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
 	var vSlice []interface{}
 	if v != nil {
 		if tmp1, ok := v.([]interface{}); ok {
@@ -15216,7 +15255,7 @@ func (ec *executionContext) unmarshalOString2ᚕstring(ctx context.Context, v in
 	return res, nil
 }
 
-func (ec *executionContext) marshalOString2ᚕstring(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+func (ec *executionContext) marshalOString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -15243,7 +15282,7 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	return ec.marshalOString2string(ctx, sel, *v)
 }
 
-func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {
+func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -15283,7 +15322,7 @@ func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋMichaelMureᚋ
 	return ret
 }
 
-func (ec *executionContext) marshalO__Field2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐField(ctx context.Context, sel ast.SelectionSet, v []introspection.Field) graphql.Marshaler {
+func (ec *executionContext) marshalO__Field2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐFieldᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.Field) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -15323,7 +15362,7 @@ func (ec *executionContext) marshalO__Field2ᚕgithubᚗcomᚋMichaelMureᚋgit�
 	return ret
 }
 
-func (ec *executionContext) marshalO__InputValue2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx context.Context, sel ast.SelectionSet, v []introspection.InputValue) graphql.Marshaler {
+func (ec *executionContext) marshalO__InputValue2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.InputValue) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -15378,7 +15417,7 @@ func (ec *executionContext) marshalO__Type2githubᚗcomᚋMichaelMureᚋgitᚑbu
 	return ec.___Type(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalO__Type2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, sel ast.SelectionSet, v []introspection.Type) graphql.Marshaler {
+func (ec *executionContext) marshalO__Type2ᚕgithubᚗcomᚋMichaelMureᚋgitᚑbugᚋvendorᚋgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.Type) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

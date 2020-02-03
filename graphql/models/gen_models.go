@@ -6,15 +6,20 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"time"
 
 	"github.com/MichaelMure/git-bug/bug"
-	"github.com/MichaelMure/git-bug/identity"
 	"github.com/MichaelMure/git-bug/util/git"
 )
 
 // An object that has an author.
 type Authored interface {
 	IsAuthored()
+}
+
+// An operation applied to a bug.
+type Operation interface {
+	IsOperation()
 }
 
 type AddCommentInput struct {
@@ -34,16 +39,39 @@ type AddCommentPayload struct {
 	// A unique identifier for the client performing the mutation.
 	ClientMutationID *string `json:"clientMutationId"`
 	// The affected bug.
-	Bug *bug.Snapshot `json:"bug"`
+	Bug *Bug `json:"bug"`
 	// The resulting operation.
 	Operation *bug.AddCommentOperation `json:"operation"`
 }
 
+type Bug struct {
+	// The identifier for this bug
+	ID string `json:"id"`
+	// The human version (truncated) identifier for this bug
+	HumanID   string      `json:"humanId"`
+	Status    Status      `json:"status"`
+	Title     string      `json:"title"`
+	Labels    []bug.Label `json:"labels"`
+	Author    *Identity   `json:"author"`
+	CreatedAt time.Time   `json:"createdAt"`
+	LastEdit  time.Time   `json:"lastEdit"`
+	// The actors of the bug. Actors are Identity that have interacted with the bug.
+	Actors *IdentityConnection `json:"actors"`
+	// The participants of the bug. Participants are Identity that have created or
+	//   added a comment on the bug.
+	Participants *IdentityConnection     `json:"participants"`
+	Comments     *CommentConnection      `json:"comments"`
+	Timeline     *TimelineItemConnection `json:"timeline"`
+	Operations   *OperationConnection    `json:"operations"`
+}
+
+func (Bug) IsAuthored() {}
+
 // The connection type for Bug.
 type BugConnection struct {
 	// A list of edges.
-	Edges []*BugEdge      `json:"edges"`
-	Nodes []*bug.Snapshot `json:"nodes"`
+	Edges []*BugEdge `json:"edges"`
+	Nodes []*Bug     `json:"nodes"`
 	// Information to aid in pagination.
 	PageInfo *PageInfo `json:"pageInfo"`
 	// Identifies the total count of items in the connection.
@@ -55,7 +83,7 @@ type BugEdge struct {
 	// A cursor for use in pagination.
 	Cursor string `json:"cursor"`
 	// The item at the end of the edge.
-	Node *bug.Snapshot `json:"node"`
+	Node *Bug `json:"node"`
 }
 
 type ChangeLabelInput struct {
@@ -75,7 +103,7 @@ type ChangeLabelPayload struct {
 	// A unique identifier for the client performing the mutation.
 	ClientMutationID *string `json:"clientMutationId"`
 	// The affected bug.
-	Bug *bug.Snapshot `json:"bug"`
+	Bug *Bug `json:"bug"`
 	// The resulting operation.
 	Operation *bug.LabelChangeOperation `json:"operation"`
 	// The effect each source label had.
@@ -95,7 +123,7 @@ type CloseBugPayload struct {
 	// A unique identifier for the client performing the mutation.
 	ClientMutationID *string `json:"clientMutationId"`
 	// The affected bug.
-	Bug *bug.Snapshot `json:"bug"`
+	Bug *Bug `json:"bug"`
 	// The resulting operation.
 	Operation *bug.SetStatusOperation `json:"operation"`
 }
@@ -125,7 +153,7 @@ type CommitAsNeededPayload struct {
 	// A unique identifier for the client performing the mutation.
 	ClientMutationID *string `json:"clientMutationId"`
 	// The affected bug.
-	Bug *bug.Snapshot `json:"bug"`
+	Bug *Bug `json:"bug"`
 }
 
 type CommitInput struct {
@@ -141,19 +169,40 @@ type CommitPayload struct {
 	// A unique identifier for the client performing the mutation.
 	ClientMutationID *string `json:"clientMutationId"`
 	// The affected bug.
-	Bug *bug.Snapshot `json:"bug"`
+	Bug *Bug `json:"bug"`
+}
+
+// Represents an identity
+type Identity struct {
+	// The identifier for this identity
+	ID string `json:"id"`
+	// The human version (truncated) identifier for this identity
+	HumanID string `json:"humanId"`
+	// The name of the person, if known.
+	Name *string `json:"name"`
+	// The email of the person, if known.
+	Email *string `json:"email"`
+	// The login of the person, if known.
+	Login *string `json:"login"`
+	// A string containing the either the name of the person, its login or both
+	DisplayName string `json:"displayName"`
+	// An url to an avatar
+	AvatarURL *string `json:"avatarUrl"`
+	// isProtected is true if the chain of git commits started to be signed.
+	//     If that's the case, only signed commit with a valid key for this identity can be added.
+	IsProtected bool `json:"isProtected"`
 }
 
 type IdentityConnection struct {
-	Edges      []*IdentityEdge      `json:"edges"`
-	Nodes      []identity.Interface `json:"nodes"`
-	PageInfo   *PageInfo            `json:"pageInfo"`
-	TotalCount int                  `json:"totalCount"`
+	Edges      []*IdentityEdge `json:"edges"`
+	Nodes      []*Identity     `json:"nodes"`
+	PageInfo   *PageInfo       `json:"pageInfo"`
+	TotalCount int             `json:"totalCount"`
 }
 
 type IdentityEdge struct {
-	Cursor string             `json:"cursor"`
-	Node   identity.Interface `json:"node"`
+	Cursor string    `json:"cursor"`
+	Node   *Identity `json:"node"`
 }
 
 type LabelConnection struct {
@@ -185,7 +234,7 @@ type NewBugPayload struct {
 	// A unique identifier for the client performing the mutation.
 	ClientMutationID *string `json:"clientMutationId"`
 	// The created bug.
-	Bug *bug.Snapshot `json:"bug"`
+	Bug *Bug `json:"bug"`
 	// The resulting operation.
 	Operation *bug.CreateOperation `json:"operation"`
 }
@@ -203,7 +252,7 @@ type OpenBugPayload struct {
 	// A unique identifier for the client performing the mutation.
 	ClientMutationID *string `json:"clientMutationId"`
 	// The affected bug.
-	Bug *bug.Snapshot `json:"bug"`
+	Bug *Bug `json:"bug"`
 	// The resulting operation.
 	Operation *bug.SetStatusOperation `json:"operation"`
 }
@@ -211,15 +260,15 @@ type OpenBugPayload struct {
 // The connection type for an Operation
 type OperationConnection struct {
 	Edges      []*OperationEdge `json:"edges"`
-	Nodes      []bug.Operation  `json:"nodes"`
+	Nodes      []Operation      `json:"nodes"`
 	PageInfo   *PageInfo        `json:"pageInfo"`
 	TotalCount int              `json:"totalCount"`
 }
 
 // Represent an Operation
 type OperationEdge struct {
-	Cursor string        `json:"cursor"`
-	Node   bug.Operation `json:"node"`
+	Cursor string    `json:"cursor"`
+	Node   Operation `json:"node"`
 }
 
 // Information about pagination in a connection.
@@ -249,7 +298,7 @@ type SetTitlePayload struct {
 	// A unique identifier for the client performing the mutation.
 	ClientMutationID *string `json:"clientMutationId"`
 	// The affected bug.
-	Bug *bug.Snapshot `json:"bug"`
+	Bug *Bug `json:"bug"`
 	// The resulting operation
 	Operation *bug.SetTitleOperation `json:"operation"`
 }

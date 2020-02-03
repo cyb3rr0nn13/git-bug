@@ -23,7 +23,7 @@ func (r mutationResolver) getRepo(ref *string) (*cache.RepoCache, error) {
 	return r.cache.DefaultRepo()
 }
 
-func (r mutationResolver) NewBug(ctx context.Context, input models.NewBugInput) (*models.NewBugPayload, error) {
+func (r mutationResolver) NewBug(_ context.Context, input models.NewBugInput) (*models.NewBugPayload, error) {
 	repo, err := r.getRepo(input.RepoRef)
 	if err != nil {
 		return nil, err
@@ -34,14 +34,16 @@ func (r mutationResolver) NewBug(ctx context.Context, input models.NewBugInput) 
 		return nil, err
 	}
 
+	excerpt, err :=
+
 	return &models.NewBugPayload{
 		ClientMutationID: input.ClientMutationID,
-		Bug:              b.Snapshot(),
+		Bug:              models.NewLoadedBug() b.Snapshot(),
 		Operation:        op,
 	}, nil
 }
 
-func (r mutationResolver) AddComment(ctx context.Context, input models.AddCommentInput) (*models.AddCommentPayload, error) {
+func (r mutationResolver) AddComment(_ context.Context, input models.AddCommentInput) (*models.AddCommentPayload, error) {
 	repo, err := r.getRepo(input.RepoRef)
 	if err != nil {
 		return nil, err
@@ -64,7 +66,7 @@ func (r mutationResolver) AddComment(ctx context.Context, input models.AddCommen
 	}, nil
 }
 
-func (r mutationResolver) ChangeLabels(ctx context.Context, input *models.ChangeLabelInput) (*models.ChangeLabelPayload, error) {
+func (r mutationResolver) ChangeLabels(_ context.Context, input *models.ChangeLabelInput) (*models.ChangeLabelPayload, error) {
 	repo, err := r.getRepo(input.RepoRef)
 	if err != nil {
 		return nil, err
@@ -93,7 +95,7 @@ func (r mutationResolver) ChangeLabels(ctx context.Context, input *models.Change
 	}, nil
 }
 
-func (r mutationResolver) OpenBug(ctx context.Context, input models.OpenBugInput) (*models.OpenBugPayload, error) {
+func (r mutationResolver) OpenBug(_ context.Context, input models.OpenBugInput) (*models.OpenBugPayload, error) {
 	repo, err := r.getRepo(input.RepoRef)
 	if err != nil {
 		return nil, err
@@ -116,7 +118,7 @@ func (r mutationResolver) OpenBug(ctx context.Context, input models.OpenBugInput
 	}, nil
 }
 
-func (r mutationResolver) CloseBug(ctx context.Context, input models.CloseBugInput) (*models.CloseBugPayload, error) {
+func (r mutationResolver) CloseBug(_ context.Context, input models.CloseBugInput) (*models.CloseBugPayload, error) {
 	repo, err := r.getRepo(input.RepoRef)
 	if err != nil {
 		return nil, err
@@ -139,7 +141,7 @@ func (r mutationResolver) CloseBug(ctx context.Context, input models.CloseBugInp
 	}, nil
 }
 
-func (r mutationResolver) SetTitle(ctx context.Context, input models.SetTitleInput) (*models.SetTitlePayload, error) {
+func (r mutationResolver) SetTitle(_ context.Context, input models.SetTitleInput) (*models.SetTitlePayload, error) {
 	repo, err := r.getRepo(input.RepoRef)
 	if err != nil {
 		return nil, err
@@ -162,7 +164,7 @@ func (r mutationResolver) SetTitle(ctx context.Context, input models.SetTitleInp
 	}, nil
 }
 
-func (r mutationResolver) Commit(ctx context.Context, input models.CommitInput) (*models.CommitPayload, error) {
+func (r mutationResolver) Commit(_ context.Context, input models.CommitInput) (*models.CommitPayload, error) {
 	repo, err := r.getRepo(input.RepoRef)
 	if err != nil {
 		return nil, err
@@ -184,7 +186,7 @@ func (r mutationResolver) Commit(ctx context.Context, input models.CommitInput) 
 	}, nil
 }
 
-func (r mutationResolver) CommitAsNeeded(ctx context.Context, input models.CommitAsNeededInput) (*models.CommitAsNeededPayload, error) {
+func (r mutationResolver) CommitAsNeeded(_ context.Context, input models.CommitAsNeededInput) (*models.CommitAsNeededPayload, error) {
 	repo, err := r.getRepo(input.RepoRef)
 	if err != nil {
 		return nil, err
